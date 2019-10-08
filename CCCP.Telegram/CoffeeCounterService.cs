@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
+using log4net;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -10,15 +11,17 @@ using File = System.IO.File;
 
 namespace CCCP.Telegram
 {
-    public class CoffeeCounter
+    public class CoffeeCounterService
     {
+        private static readonly ILog _log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private static TelegramBotClient bot;
         private int _savedCups;
         private float plasticPerCupInGram = 2.8f;
 
         private string path = ConfigurationManager.AppSettings["infoFile"];
 
-        public CoffeeCounter()
+        public CoffeeCounterService()
         {
             if (File.Exists(path))
             {
@@ -34,6 +37,8 @@ namespace CCCP.Telegram
             bot.OnMessage += BotOnMessageReceived;
 
             bot.StartReceiving(Array.Empty<UpdateType>());
+
+            _log.Info($"{nameof(CoffeeCounterService)} started");
         }
 
         public void Stop() { }
@@ -43,7 +48,7 @@ namespace CCCP.Telegram
             var message = e.Message;
             if (message == null || message.Type != MessageType.Text) return;
 
-            Console.WriteLine($"Received: {e.Message.Text}");
+            _log.Info($"Received: {e.Message.Text}");
 
             var text = message.Text.Split(' ').First().ToLower();
             var isParsed = int.TryParse(text, out int nrOfCups);
