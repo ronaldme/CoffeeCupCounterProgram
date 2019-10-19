@@ -13,7 +13,8 @@ namespace CCCP.Telegram
 {
     public class CoffeeCounterService
     {
-        private static readonly ILog _log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly string _path;
 
         private static TelegramBotClient bot;
         private int _savedCups;
@@ -29,6 +30,8 @@ namespace CCCP.Telegram
                 _savedCups = int.Parse(readText);
             }
             else File.WriteAllText(_path, "0");
+
+            _log.Info($"Initial startup saved cups: {_savedCups}");
         }
 
         public void Start()
@@ -62,7 +65,11 @@ namespace CCCP.Telegram
             switch (text)
             {
                 case "/start":
-                    await SendDefault(message, "Cups saved");
+                    await SendDefault(message, "Enter number of cups saved");
+                    break;
+                case "/stats":
+                    await SendDefault(message, $"Total saved cups: {_savedCups} \n" +
+                                               $"Total saved plastic: {plasticPerCupInGram * _savedCups}");
                     break;
                 case "/undo":
                     await bot.SendTextMessageAsync(message.Chat.Id,
