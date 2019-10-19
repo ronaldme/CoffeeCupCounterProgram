@@ -18,17 +18,17 @@ namespace CCCP.Telegram
         private static TelegramBotClient bot;
         private int _savedCups;
         private float plasticPerCupInGram = 2.8f;
-
-        private string path = ConfigurationManager.AppSettings["infoFile"];
-
+        
         public CoffeeCounterService()
         {
-            if (File.Exists(path))
+            _path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["infoFile"]);
+
+            if (File.Exists(_path))
             {
-                string readText = File.ReadAllText(path);
+                string readText = File.ReadAllText(_path);
                 _savedCups = int.Parse(readText);
             }
-            else File.WriteAllText(path, "0");
+            else File.WriteAllText(_path, "0");
         }
 
         public void Start()
@@ -95,7 +95,7 @@ namespace CCCP.Telegram
                     "/start");
             }
 
-            File.WriteAllText(path, _savedCups.ToString());
+            File.WriteAllText(_path, _savedCups.ToString());
         }
 
         private async Task SendDefault(Message message, string text)
