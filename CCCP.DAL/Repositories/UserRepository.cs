@@ -1,4 +1,5 @@
-﻿using CCCP.DAL.Entities;
+﻿using System;
+using CCCP.DAL.Entities;
 
 namespace CCCP.DAL.Repositories
 {
@@ -29,8 +30,16 @@ namespace CCCP.DAL.Repositories
             using (var db = Create())
             {
                 var user = GetUser(chatId);
-                user.NumberOfCupSubmitted = user.NumberOfCupSubmitted += nrOfCups;
+                user.TotalSubmitCount = user.TotalSubmitCount += nrOfCups;
 
+                var registrations = db.GetCollection<Registration>();
+                registrations.Insert(new Registration
+                {
+                    SubmitCount = nrOfCups,
+                    Timestamp = DateTime.Now,
+                    UserId = user.Id,
+                });
+                
                 Collection(db).Update(user);
             }
         }
