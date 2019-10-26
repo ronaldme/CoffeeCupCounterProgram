@@ -4,29 +4,31 @@ using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 using CCCP.DAL.Repositories;
+using CCCP.Telegram.Core;
 using log4net;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using User = CCCP.DAL.Entities.User;
 
 namespace CCCP.Telegram
 {
     public class CoffeeCounterService
     {
-        private Dictionary<long, string> Users { get; } = new Dictionary<long, string>();
-
         private static readonly ILog _log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
         private static TelegramBotClient bot;
         private int _savedCups;
-        private float plasticPerCupInGram = 2.8f;
-        
+        private readonly CoffeeCupRepository _coffeeCupRepository = new CoffeeCupRepository();
+        private readonly UserRepository _userRepository = new UserRepository();
+        private readonly RegistrationRepository _registrationRepository = new RegistrationRepository();
+
+        private Dictionary<long, string> Users { get; } = new Dictionary<long, string>();
+
         public CoffeeCounterService()
         {
-            var count = new CoffeeCupRepository();
-            _savedCups = count.GetTotalSavedCups();
+            _savedCups = _coffeeCupRepository.GetTotalSavedCups();
 
             _log.Info($"Initial startup saved cups: {_savedCups}");
         }
@@ -48,69 +50,82 @@ namespace CCCP.Telegram
             var message = e.Message;
             if (message == null || message.Type != MessageType.Text) return;
 
-            _log.Info($"Received: {e.Message.Text}");
-
-            var userRepo = new UserRepository();
-            var user = userRepo.GetUser(message.Chat.Id);
-
-            if (user == null)
+            try
             {
-                await HandleUnknownUser(e, message);
-                return;
+                _log.Info($"Received: {e.Message.Text}");
+
+                var user = _userRepository.GetUser(message.Chat.Id);
+
+                if (user == null)
+                {
+                    await HandleUnknownUser(e, message);
+                    return;
+                }
+
+                var text = message.Text.Split(' ').First().ToLower();
+                var isParsed = int.TryParse(text, out int nrOfCups);
+
+                if (isParsed)
+                {
+                    HandleCupsSaved(nrOfCups, message).GetAwaiter().GetResult();
+                    return;
+                }
+
+                await HandleOptions(text, message, user);
             }
-
-            var text = message.Text.Split(' ').First().ToLower();
-            var isParsed = int.TryParse(text, out int nrOfCups);
-
-            if (isParsed)
+            catch (Exception exception)
             {
-                HandleCupsSaved(nrOfCups, message).GetAwaiter().GetResult();
-                return;
+                _log.Error($"Could not handle message {message.Text}", exception);
             }
-
-            await HandleOptions(text, message, user.IsAdmin);
         }
 
-        private async Task HandleOptions(string text, Message message, bool isAdmin)
+        private async Task HandleOptions(string text, Message message, User userInfo)
         {
+            var isAdmin = userInfo.IsAdmin;
             if (isAdmin) AdminOptions(text, message);
 
             switch (text)
             {
+                case "start":
                 case "/start":
-                    await SendDefault(message, "Enter number of cups saved");
+                    await bot.Send(message, "Enter number of cups saved");
                     break;
+                case "users" when isAdmin:
                 case "/users" when isAdmin:
                 {
                     foreach (var user in Users)
                     {
-                        ReplyKeyboardMarkup kb = new[]
-                        {
-                            new[] { $"accept-{user.Key}" },
-                            new[] { $"reject-{user.Key}" },
-                        };
-
-                        await bot.SendTextMessageAsync(
-                            message.Chat.Id,
+                        await bot.SendTextMessageAsync(message.Chat.Id,
                             $"Authenticate: {user.Value}",
-                            replyMarkup: kb);
-                        break;
+                            replyMarkup: Keyboards.AuthenticationKb(user.Key));
+                        return;
                     }
-                    await SendDefault(message, "No users to authenticate");
+                    await bot.Send(message, "No users to authenticate");
                     break;
                 }
                 case "stats":
                 case "/stats":
-                    await SendDefault(message, $"Total saved cups: {_savedCups} \n" +
-                                               $"Total saved plastic: {plasticPerCupInGram * _savedCups}");
+                    await bot.Send(message, Helpers.TotalSavedText(_savedCups));
                     break;
+                case "stats_extended":
+                case "/stats_extended":
+                    await bot.SendStatsExtended(message, _registrationRepository, _savedCups);
+                    break;
+                case "user_stats":
+                case "/user_stats":
+                    await bot.SendUserStats(message, userInfo, _registrationRepository, _savedCups);
+                    break;
+                case "undo":
                 case "/undo":
                     await bot.SendTextMessageAsync(message.Chat.Id,
                         "Cups", replyMarkup: Keyboards.Undo);
                     break;
                 default:
-                    await SendDefault(message, "/start - Start saving\n" +
-                                               "/undo - Enter number of cups to undo" +
+                    await bot.Send(message, "/start - Start saving\n" +
+                                               "/undo - Enter number of cups to undo\n" +
+                                               "/stats - Get basic statistics\n" +
+                                               "/stats_extended - Get extended statistics!\n" +
+                                               "/user_stats - See your own stats\n" +
                                                (isAdmin ? "\n/users - show users to authenticate" : null));
                     break;
             }
@@ -121,9 +136,7 @@ namespace CCCP.Telegram
             if (text.StartsWith("accept"))
             {
                 var chatId = GetChatId("accept", text);
-
-                var repo = new UserRepository();
-                repo.CreateUser(Users[chatId], message.Chat.Id);
+                _userRepository.CreateUser(Users[chatId], message.Chat.Id);
 
                 Users.Remove(chatId);
             }
@@ -136,7 +149,7 @@ namespace CCCP.Telegram
 
         private async Task HandleUnknownUser(MessageEventArgs e, Message message)
         {
-            _log.Info($"Unknown user send a message. User: {message.Chat.FirstName}, ChatId: {message.Chat.Id}");
+            _log.Info($"Unknown user send coffeeCupRepository message. User: {message.Chat.FirstName}, ChatId: {message.Chat.Id}");
 
             if (e.Message.Text == "/authenticate")
             {
@@ -157,33 +170,18 @@ namespace CCCP.Telegram
 
             if (nrOfCups > 0)
             {
-                await SendDefault(message,
-                    $"Thanks for saving {nrOfCups} {(nrOfCups > 1 ? "cups" : "cup")}, which is equal to {plasticPerCupInGram * nrOfCups} grams of plastic. \n\n" +
-                    $"Total saved cups: {_savedCups} \n" +
-                    $"Total saved plastic: {plasticPerCupInGram * _savedCups} grams");
+                await bot.Send(message,
+                    $"Thanks for saving {nrOfCups} {(nrOfCups > 1 ? "cups" : "cup")} " +
+                    $"({Constants.PlasticPerCupInGram * nrOfCups} grams of plastic) \n\n" +
+                    $"{Helpers.TotalSavedText(_savedCups)}");
             }
-            else
-            {
-                await SendDefault(message,
-                    $"{nrOfCups} undo done.\n\n" +
-                    $"Total saved cups: {_savedCups} \n" +
-                    $"Total saved plastic: {plasticPerCupInGram * _savedCups}\n\n" +
-                    "/start");
-            }
+            else if (nrOfCups < 0)
+                await bot.Send(message, $"{nrOfCups} undo done.\n\n" +
+                                        $"{Helpers.TotalSavedText(_savedCups)}");
 
-            var ccr = new CoffeeCupRepository();
-            ccr.UpdateCoffeeCupsSaved(_savedCups);
-
-            var user = new UserRepository();
-            user.UpdateCount(message.Chat.Id, nrOfCups);
-        }
-
-        private async Task SendDefault(Message message, string text)
-        {
-            await bot.SendTextMessageAsync(
-                message.Chat.Id,
-                text,
-                replyMarkup: Keyboards.Default);
+            _coffeeCupRepository.UpdateCoffeeCupsSaved(_savedCups);
+            _userRepository.UpdateCount(message.Chat.Id, nrOfCups);
+            _userRepository.UpdateCount(message.Chat.Id, nrOfCups);
         }
     }
 }
