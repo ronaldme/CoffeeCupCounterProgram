@@ -1,6 +1,6 @@
 ﻿using Telegram.Bot.Types.ReplyMarkups;
 
-namespace CCCP.Telegram
+namespace CCCP.Telegram.Core
 {
     public static class Keyboards
     {
@@ -15,5 +15,14 @@ namespace CCCP.Telegram
             new[] { "-1", "-2", "-3" },
             new[] { "-4", "-5", "-6" },
         };
+
+        public static ReplyKeyboardMarkup AuthenticationKb(long key)
+        {
+            return new[]
+            {
+                new[] { $"accept-{key}" },
+                new[] { $"reject-{key}" },
+            };
+        }
     }
 }
