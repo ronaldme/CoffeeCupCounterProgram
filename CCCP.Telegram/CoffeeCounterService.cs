@@ -18,6 +18,7 @@ namespace CCCP.Telegram
     public class CoffeeCounterService
     {
         private static readonly ILog _log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly string _postUrl = ConfigurationManager.AppSettings["postUrl"];
         private static TelegramBotClient bot;
         private int _savedCups;
         private readonly CoffeeCupRepository _coffeeCupRepository = new CoffeeCupRepository();
@@ -182,6 +183,8 @@ namespace CCCP.Telegram
             _coffeeCupRepository.UpdateCoffeeCupsSaved(_savedCups);
             _userRepository.UpdateCount(message.Chat.Id, nrOfCups);
             _userRepository.UpdateCount(message.Chat.Id, nrOfCups);
+
+            if (_postUrl != null) PostHelper.PostCount(_postUrl, _savedCups);
         }
     }
 }
