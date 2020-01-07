@@ -24,6 +24,7 @@ namespace CCCP.Telegram
         private readonly CoffeeCupRepository _coffeeCupRepository = new CoffeeCupRepository();
         private readonly UserRepository _userRepository = new UserRepository();
         private readonly RegistrationRepository _registrationRepository = new RegistrationRepository();
+        private readonly AchievementService _achievementService = new AchievementService();
 
         private Dictionary<long, string> Users { get; } = new Dictionary<long, string>();
 
@@ -171,6 +172,9 @@ namespace CCCP.Telegram
 
             if (nrOfCups > 0)
             {
+                var achievement = _achievementService.GetAchievement(_savedCups);
+                if (achievement != null) await bot.Send(message, $"Unlocked achievement: {achievement}");
+
                 await bot.Send(message,
                     $"Thanks for saving {nrOfCups} {(nrOfCups > 1 ? "cups" : "cup")} " +
                     $"({Constants.PlasticPerCupInGram * nrOfCups} grams of plastic) \n\n" +
