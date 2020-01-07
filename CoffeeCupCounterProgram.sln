@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29230.47
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CCCP.Telegram", "CCCP.Telegram\CCCP.Telegram.csproj", "{27C07337-13E8-491E-B6B2-F4DBD4AE238D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCCP.DAL", "CCCP.DAL\CCCP.DAL.csproj", "{41F370DF-DDF9-4165-9948-0400EBF3DA2F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CCCP.DAL", "CCCP.DAL\CCCP.DAL.csproj", "{41F370DF-DDF9-4165-9948-0400EBF3DA2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCCP.Setup", "CCCP.Setup\CCCP.Setup.csproj", "{8BAD77C0-BDB2-4169-A2BB-57962F57CFEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{41F370DF-DDF9-4165-9948-0400EBF3DA2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41F370DF-DDF9-4165-9948-0400EBF3DA2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41F370DF-DDF9-4165-9948-0400EBF3DA2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BAD77C0-BDB2-4169-A2BB-57962F57CFEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BAD77C0-BDB2-4169-A2BB-57962F57CFEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BAD77C0-BDB2-4169-A2BB-57962F57CFEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BAD77C0-BDB2-4169-A2BB-57962F57CFEE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
