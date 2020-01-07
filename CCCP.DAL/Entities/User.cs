@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace CCCP.DAL.Entities
+﻿namespace CCCP.DAL.Entities
 {
     public class User
     {
