@@ -7,41 +7,35 @@ namespace CCCP.DAL.Repositories
     {
         public User GetUser(long chatId)
         {
-            using (var db = Create())
-            {
-                return Collection(db).FindOne(c => c.ChatId == chatId);
-            }
+            using var db = Create();
+            return Collection(db).FindOne(c => c.ChatId == chatId);
         }
 
         public void CreateUser(string name, long chatId)
         {
-            using (var db = Create())
+            using var db = Create();
+            Collection(db).Insert(new User
             {
-                Collection(db).Insert(new User
-                {
-                    Name = name,
-                    ChatId = chatId,
-                });
-            }
+                Name = name,
+                ChatId = chatId,
+            });
         }
 
         public void UpdateCount(long chatId, int nrOfCups)
         {
-            using (var db = Create())
-            {
-                var user = GetUser(chatId);
-                user.TotalSubmitCount = user.TotalSubmitCount += nrOfCups;
+            using var db = Create();
+            var user = GetUser(chatId);
+            user.TotalSubmitCount = user.TotalSubmitCount += nrOfCups;
 
-                var registrations = db.GetCollection<Registration>();
-                registrations.Insert(new Registration
-                {
-                    SubmitCount = nrOfCups,
-                    Timestamp = DateTime.Now,
-                    UserId = user.Id,
-                });
+            var registrations = db.GetCollection<Registration>();
+            registrations.Insert(new Registration
+            {
+                SubmitCount = nrOfCups,
+                Timestamp = DateTime.Now,
+                UserId = user.Id,
+            });
                 
-                Collection(db).Update(user);
-            }
+            Collection(db).Update(user);
         }
     }
 }

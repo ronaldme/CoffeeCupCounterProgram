@@ -8,22 +8,18 @@ namespace CCCP.DAL.Repositories
     {
         public int GetTotalSavedCups()
         {
-            using (var db = Create())
-            {
-                var cc = Get(db);
-                return cc.TotalSaved;
-            }
+            using var db = Create();
+            var cc = Get(db);
+            return cc.TotalSaved;
         }
 
         public void UpdateCoffeeCupsSaved(int totalSaved)
         {
-            using (var db = Create())
-            {
-                var cc = Get(db);
-                cc.TotalSaved = totalSaved;
+            using var db = Create();
+            var cc = Get(db);
+            cc.TotalSaved = totalSaved;
 
-                Collection(db).Update(cc);
-            }
+            Collection(db).Update(cc);
         }
 
         private CoffeeCups Get(LiteDatabase db)
