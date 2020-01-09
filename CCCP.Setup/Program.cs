@@ -10,7 +10,11 @@ namespace CCCP.Setup
             {1, "First one!" },
             {100, "100 saved cups" },
             {550, "Five-five-five, well done!" },
-            {666, "Devilishly good!" },
+            {600, "600 cups!" },
+            {666, "Devilishly!" },
+            {700, "700 cups!" },
+            {800, "800 cups!" },
+            {900, "900 cups!" },
             {1000, "Nice, one thousand!" },
             {9001, "Its over 9000!" },
         };
